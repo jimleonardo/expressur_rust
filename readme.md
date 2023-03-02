@@ -3,7 +3,7 @@ Expressur does some basic math. This project is a port of Expressur from C# to R
 
 The real reason I built Expressur is to be a meaningful but straightforward set of code that can be ported to almost any other language so that the languages can be compared. It does this by taking a normal problem, arithmetic, and using string manipulation, iteration, and primitive operations.
 
-It can also calculate the results of a set of formula, including formula that rely on the results of other formula. For example, this test from  `EvaluatorTests.cs` shows this "extra indirection" where one formula relies on the results from two other formula, including a formula that in turn relies on other formula.
+It can also calculate the results of a set of formula, including formula that rely on the results of other formula. For example, this test from the original `[EvaluatorTests.cs](https://github.com/jimleonardo/Expressur/blob/main/test/Expressur.Test/EvaluatorTests.cs)` in C# shows this "extra indirection" where one formula relies on the results from two other formula, including a formula that in turn relies on other formula.
 
 ```csharp
 [Fact]
