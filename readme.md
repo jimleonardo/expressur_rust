@@ -1,5 +1,5 @@
 # Expressur
-Expressur does some basic math. This project is a port of Expressur from C# to Rust. The original C# project is [here](https://github.com/jimleonardo/Expressur).
+Expressur does some basic math. This project is a port of Expressur from C# to Rust. The original C# project is [here](https://github.com/jimleonardo/Expressur). The port is **NOT** complete or functional yet, that will take another couple of working sessions.
 
 The real reason I built Expressur is to be a meaningful but straightforward set of code that can be ported to almost any other language so that the languages can be compared. It does this by taking a normal problem, arithmetic, and using string manipulation, iteration, and primitive operations.
 
