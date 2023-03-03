@@ -1,4 +1,3 @@
-use crate::prelude::*;
 
 pub fn tokenize(expression: &str) -> Vec<String>{
 
@@ -7,7 +6,7 @@ pub fn tokenize(expression: &str) -> Vec<String>{
 
     let mut current_token: String = String::new();
     
-    for i in (0..expression.len()){
+    for i in 0..expression.len(){
         let c = expression.chars().nth(i).unwrap();       
         
         if is_whitespace(c){
