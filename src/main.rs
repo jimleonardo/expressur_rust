@@ -3,10 +3,13 @@ use std::{env, collections::VecDeque};
 mod prelude{
     pub use std::collections::HashMap;
     pub use std::vec;
-
-    pub use crate::tokenizer::*;
+    
+    pub use rust_decimal::Decimal;
+    pub use rust_decimal_macros::*;
+    pub use rust_decimal::MathematicalOps;
+    
 }
-
+use crate::tokenizer::*;
 use prelude::*;
 
 const NOT_AN_OPERATOR: i32 = -1;
@@ -39,7 +42,7 @@ fn main() {
     } 
 }
 
-pub fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> Result<f32, String> {
+pub fn evaluate_expression(expression: &str, context:&HashMap<String, Decimal>,) -> Result<Decimal, String> {
     let mut stack: Vec<String> = Vec::new();
     let mut q =  reverse_polish_notate(expression.to_string());
     while !q.is_empty() {
@@ -65,12 +68,12 @@ pub fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> 
             stack.push(next);
         }
     }
-    Ok(stack.pop().unwrap().parse::<f32>().unwrap())    
+    Ok(stack.pop().unwrap().parse::<Decimal>().unwrap())    
 }
 
-pub fn evaluate_expressions(expressions: &HashMap<String, String>, context:&HashMap<String, f32>,) -> Result<HashMap<String, f32>, Vec<(String, String)>> {
+pub fn evaluate_expressions(expressions: &HashMap<String, String>, context:&HashMap<String, Decimal>,) -> Result<HashMap<String, Decimal>, Vec<(String, String)>> {
     // need to change to accept a dictionary of expressions and return those.
-    let mut results: HashMap<String, f32> = context.clone();
+    let mut results: HashMap<String, Decimal> = context.clone();
     let mut expressions_to_evaluate: Vec<(String, String)> = expressions.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();    
 
     loop {
@@ -111,9 +114,9 @@ pub fn evaluate_expressions(expressions: &HashMap<String, String>, context:&Hash
     
 }
 
-fn get_val(context: &HashMap<String, f32>, token: &String) -> Result<f32, String> {
-    if token.parse::<f32>().is_ok() {
-        Ok(token.parse::<f32>().unwrap())        
+fn get_val(context: &HashMap<String, Decimal>, token: &String) -> Result<Decimal, String> {
+    if token.parse::<Decimal>().is_ok() {
+        Ok(token.parse::<Decimal>().unwrap())        
     }
     else if context.contains_key(token) {
         Ok(context[token])
@@ -124,10 +127,10 @@ fn get_val(context: &HashMap<String, f32>, token: &String) -> Result<f32, String
     }
 }   
 
-fn evaluate_operator (x: f32, y: f32, op: &str) -> f32 {
+fn evaluate_operator (x: Decimal, y: Decimal, op: &str) -> Decimal {
     match op {
-        "=" => if x == y { 1.0 } else { 0.0 },
-        "^" => x.powf(y),
+        "=" => if x == y { dec!(1.0) } else { dec!(0.0) },
+        "^" => x.powd(y),
         "+" => x + y,
         "-" => x - y,
         "*" => x * y,
@@ -205,7 +208,7 @@ fn test_polish2(){
 #[test]
 fn test_eval(){
     let expression = "( 1 + 2 ) * 3";
-    let expected = 9.0;
+    let expected = dec!(9.0);
     let context = HashMap::new();
     assert_eq!(evaluate_expression(expression, &context).unwrap(), expected);
 }
@@ -214,9 +217,9 @@ fn test_eval(){
 #[test]
 fn test_eval_expr(){
     let expressions: HashMap<String, String> = [("val".to_string(),"( 1 + 2 ) * a".to_string())].iter().cloned().collect();
-    let a:f32 = 3.;    
-    let expected = 9.0;
-    let context: HashMap<String, f32> =
+    let a:Decimal = dec!(3.);    
+    let expected = dec!(9.0);
+    let context: HashMap<String, Decimal> =
     [("a".to_string(), a)]
      .iter().cloned().collect();
     // use the values stored in map
@@ -233,15 +236,15 @@ fn test_eval_context_expr1(){
         ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
         ].iter().cloned().collect();        
 
-    let context: HashMap<String, f32> =
-    [("a".to_string(), 1.),
-        ("b".to_string(), 2.),
-        ("c".to_string(), 4.)    
+    let context: HashMap<String, Decimal> =
+    [("a".to_string(), dec!(1.)),
+        ("b".to_string(), dec!(2.)),
+        ("c".to_string(), dec!(4.))    
     ].iter().cloned().collect();
     // use the values stored in map
     let results = evaluate_expressions(&expressions, &context).unwrap();
 
-    assert_eq!(results["aplusb"], 3.);
-    assert_eq!(results["cplusaplusb"], 7.);
-    assert_eq!(format!("{:.3}", results["extraindirection"]), "0.429");
+    assert_eq!(results["aplusb"], dec!(3.));
+    assert_eq!(results["cplusaplusb"], dec!(7.));
+    assert_eq!(results["extraindirection"].round_dp(3), dec!(0.429));
 }
