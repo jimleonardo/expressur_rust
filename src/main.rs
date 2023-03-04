@@ -39,7 +39,7 @@ fn main() {
     } 
 }
 
-fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> Result<f32, String> {
+pub fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> Result<f32, String> {
     let mut stack: Vec<String> = Vec::new();
     let mut q =  reverse_polish_notate(expression.to_string());
     while !q.is_empty() {
@@ -52,6 +52,12 @@ fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> Resu
             if  x_val.is_err() && y_val.is_err()  {
                 return Err(format!("Unknown variables: {} and {}", x, y));
             }
+            else if x_val.is_err() {
+                return Err(format!("Unknown variable: {}", x));
+            }
+            else if y_val.is_err() {
+                return Err(format!("Unknown variable: {}", y));
+            }
             let result = evaluate_operator(x_val.unwrap()  ,y_val.unwrap(), &next);
             stack.push(result.to_string());
         }
@@ -62,18 +68,47 @@ fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> Resu
     Ok(stack.pop().unwrap().parse::<f32>().unwrap())    
 }
 
-#[allow(dead_code)]
-fn evaluate_expressions(expressions: &Vec<String>, context:&HashMap<String, f32>,) -> Result<Vec<f32>, String> {
+pub fn evaluate_expressions(expressions: &HashMap<String, String>, context:&HashMap<String, f32>,) -> Result<HashMap<String, f32>, Vec<(String, String)>> {
     // need to change to accept a dictionary of expressions and return those.
-    let mut results: Vec<f32> = Vec::new();
-    for expression in expressions {
-        let result = evaluate_expression(expression, context);
-        if result.is_err() {
-            return Err(format!("Error evaluating expression: {}", expression));
-        }
-        results.push(result.unwrap());
+    let mut results: HashMap<String, f32> = context.clone();
+    let mut expressions_to_evaluate: Vec<(String, String)> = expressions.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();    
+
+    loop {
+        let mut were_any_found = false;
+    let mut uncalculated_expressions:HashMap<String, String> = HashMap::new();
+
+        for expression in expressions_to_evaluate {
+            let result = evaluate_expression(expression.1.as_str(), &results);
+            match result{            
+                Ok(value) => {   
+                    results.insert(expression.0, value);
+                    were_any_found = true;            
+                },
+                _ => {
+                    uncalculated_expressions.insert(expression.0, expression.1);
+                }
+            }    
+        }            
+            expressions_to_evaluate = uncalculated_expressions.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+            if uncalculated_expressions.is_empty() && were_any_found {
+                break;
+            }
+            else  if !were_any_found {
+                println!("Ending loop. Could not evaluate: {}", uncalculated_expressions.keys().map(|k| k.to_string()).collect::<Vec<String>>().join(", "));
+                break;                
+            }
+            else{
+                println!("Looping back. Could not evaluate: {}", uncalculated_expressions.keys().map(|k| k.to_string()).collect::<Vec<String>>().join(", "));
+            }            
     }
-    Ok(results)
+    if expressions_to_evaluate.is_empty(){
+        Ok(results)
+    }
+    else {
+        Err(expressions_to_evaluate)
+    }
+
+    
 }
 
 fn get_val(context: &HashMap<String, f32>, token: &String) -> Result<f32, String> {
@@ -178,13 +213,35 @@ fn test_eval(){
 
 #[test]
 fn test_eval_expr(){
-    let expression = "( 1 + 2 ) * a".to_string();
+    let expressions: HashMap<String, String> = [("val".to_string(),"( 1 + 2 ) * a".to_string())].iter().cloned().collect();
     let a:f32 = 3.;    
     let expected = 9.0;
     let context: HashMap<String, f32> =
     [("a".to_string(), a)]
      .iter().cloned().collect();
     // use the values stored in map
+    let results = evaluate_expressions(&expressions, &context).unwrap();
+    let actual = results["val"];    
+    assert_eq!(actual, expected);
+}
 
-    assert_eq!(evaluate_expressions(&vec![expression], &context).unwrap()[0], expected);
+#[test]
+fn test_eval_context_expr1(){
+    let expressions: HashMap<String, String> = [
+        ("cplusaplusb".to_string(),"c + aplusb".to_string()),
+        ("aplusb".to_string(),"a + b".to_string()),
+        ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
+        ].iter().cloned().collect();        
+
+    let context: HashMap<String, f32> =
+    [("a".to_string(), 1.),
+        ("b".to_string(), 2.),
+        ("c".to_string(), 4.)    
+    ].iter().cloned().collect();
+    // use the values stored in map
+    let results = evaluate_expressions(&expressions, &context).unwrap();
+
+    assert_eq!(results["aplusb"], 3.);
+    assert_eq!(results["cplusaplusb"], 7.);
+    assert_eq!(format!("{:.3}", results["extraindirection"]), "0.429");
 }
