@@ -8,3 +8,12 @@ edition = "2021"
 [dependencies]
 rust_decimal = {version = "1.28", features = ["maths", "serde"]}
 rust_decimal_macros = "1.28"
+num-format = "0.4"
+
+[[bin]]
+name = "load_test"
+
+[profile.release-opt]
+inherits = "release"
+lto = true
+overflow-checks = false

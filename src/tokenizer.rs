@@ -19,23 +19,24 @@ pub fn tokenize(expression: &str) -> Vec<String>{
             current_token = output_token(&mut output, &mut current_token);
             output.push(c.to_string());
         }
-        else if c == '-' || c == '+' {
-            let next = expression.chars().nth(i+1).unwrap();
+        else if c == '-' || c == '+' {            
             if last_char == char::default() {
                 current_token.push(c);
+            }            
+            else if expression.len() > i {
+                let next = expression.chars().nth(i+1).unwrap();
+                if is_whitespace(c) || is_operator(next) || next =='('{
+                    current_token = output_token(&mut output, &mut current_token);
+                    output.push(c.to_string());
+                }
+                else if is_number(next) && (is_operator(last_char) || is_whitespace(last_char) || last_char == '('){
+                    current_token.push(c);
+                }
+                else {
+                    current_token = output_token(&mut output, &mut current_token);
+                    output.push(c.to_string());
+                }
             }
-            else if is_whitespace(c) || is_operator(next) || next =='('{
-                current_token = output_token(&mut output, &mut current_token);
-                output.push(c.to_string());
-            }
-            else if is_number(next) && (is_operator(last_char) || is_whitespace(last_char) || last_char == '('){
-                current_token.push(c);
-            }
-            else{
-                current_token = output_token(&mut output, &mut current_token);
-                output.push(c.to_string());
-            }
-            
          }
         else{
             panic!("Unexpected character: {}", c);
@@ -96,6 +97,7 @@ fn test_tokenizer() {
         ("(1 + 1)*2", vec!["(", "1", "+", "1", ")", "*", "2"]),
         ("(1 + cash.cycle)*2", vec!["(", "1", "+", "cash.cycle", ")", "*", "2"]),
         ("2 / 1", vec!["2", "/", "1"]),
+        //known bug("1 +555", vec!["1", "+", "555"])
     ];
     for test in tests {
         assert_eq!(tokenize(test.0), test.1, "Failed to tokenize: {}", test.0);
