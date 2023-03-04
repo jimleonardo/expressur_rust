@@ -1,5 +1,5 @@
 use std::env;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use expressur::expressur::*;
 
 
@@ -17,7 +17,7 @@ use expressur::expressur::*;
 fn main() {
     let args: Vec<String> = env::args().collect();
     let expression = args[1].to_string();
-    let context = HashMap::new();
+    let context = BTreeMap::new();
     let result = evaluate_expression(&expression, &context);
     match result {
         Ok(value) => println!("{}", value),

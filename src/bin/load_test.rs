@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Add};
+use std::{collections::BTreeMap, ops::Add};
 
 use expressur::expressur::*;
 use rust_decimal::Decimal;
@@ -17,13 +17,13 @@ use num_format::{Locale, ToFormattedString};
 /// 3
 /// ```
 fn main() {
-    let expressions: HashMap<String, String> = [
+    let expressions: BTreeMap<String, String> = [
         ("cplusaplusb".to_string(),"c + aplusb".to_string()),
         ("aplusb".to_string(),"a + b".to_string()),
         ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
     ].iter().cloned().collect();        
 
-    let context: HashMap<String, Decimal> = [
+    let context: BTreeMap<String, Decimal> = [
         ("a".to_string(), dec!(1.)),
         ("b".to_string(), dec!(2.)),
         ("c".to_string(), dec!(4.))    
@@ -43,7 +43,7 @@ fn main() {
     println!("Total Time to Execute {}: {:?}", (inner_loops*outer_loops).to_formatted_string(&Locale::en), total);
 }
 
-fn do_the_loop(expressions: &HashMap<String, String>, context: &HashMap<String, Decimal>, inner_loops: usize) -> std::time::Duration{
+fn do_the_loop(expressions: &BTreeMap<String, String>, context: &BTreeMap<String, Decimal>, inner_loops: usize) -> std::time::Duration{
     let now = std::time::Instant::now();
     for _ in 0..inner_loops {
         evaluate_expressions(expressions, context).unwrap();

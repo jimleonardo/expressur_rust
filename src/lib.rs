@@ -1,7 +1,7 @@
 mod evaluator;
 mod tokenizer;  
 pub mod prelude{
-    pub use std::collections::HashMap;
+    pub use std::collections::BTreeMap;
     pub use rust_decimal::Decimal;
     pub use rust_decimal_macros::*;
     pub use crate::evaluator::*;

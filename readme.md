@@ -8,13 +8,13 @@ It can also calculate the results of a set of formula, including formula that re
 ```rust
 #[test]
 fn test_eval_context_expr1(){
-    let expressions: HashMap<String, String> = [
+    let expressions: BTreeMap<String, String> = [
         ("cplusaplusb".to_string(),"c + aplusb".to_string()),
         ("aplusb".to_string(),"a + b".to_string()),
         ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
         ].iter().cloned().collect();        
 
-    let context: HashMap<String, Decimal> = [
+    let context: BTreeMap<String, Decimal> = [
         ("a".to_string(), dec!(1.)),
             ("b".to_string(), dec!(2.)),
             ("c".to_string(), dec!(4.))    
