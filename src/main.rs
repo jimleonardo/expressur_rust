@@ -9,18 +9,6 @@ mod prelude{
 
 use prelude::*;
 
-// const operator_precedence: HashMap<&str, i32> = [
-//     ("=", 10),
-//     ("^", 40),
-//     ("+", 50),
-//     ("-", 50),
-//     ("*", 80),
-//     ("/", 80),
-//     ("%", 80),
-//     ("(", 1000),
-//     (")", 1000)
-//  ].iter().cloned().collect()  ;
-
 const NOT_AN_OPERATOR: i32 = -1;
 const SUBEXPRESSION_PRECEDENCE: i32 = 1000;
 
@@ -33,8 +21,8 @@ fn operator_precedence(op: &str) -> i32 {
         "*" => 80,
         "/" => 80,
         "%" => 80,
-        "(" => 1000,
-        ")" => 1000,
+        "(" => SUBEXPRESSION_PRECEDENCE,
+        ")" => SUBEXPRESSION_PRECEDENCE,
         _ => NOT_AN_OPERATOR
     }
 }
@@ -45,10 +33,13 @@ fn main() {
     let expression = args[1].to_string();
     let context = HashMap::new();
     let result = evaluate_expression(&expression, &context);
-    println!("{}", result.1);
+    match result {
+        Ok(value) => println!("{}", value),
+        Err(error) => println!("{}", error)
+    } 
 }
 
-fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> (bool, f32) {
+fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> Result<f32, String> {
     let mut stack: Vec<String> = Vec::new();
     let mut q =  reverse_polish_notate(expression.to_string());
     while !q.is_empty() {
@@ -58,41 +49,43 @@ fn evaluate_expression(expression: &str, context:&HashMap<String, f32>,) -> (boo
             let x = stack.pop().unwrap();
             let x_val =  get_val(context, &x);
             let y_val =  get_val(context, &y);
-            if !x_val.0 || !y_val.0  {
-                return (false, f32::default());
+            if  x_val.is_err() && y_val.is_err()  {
+                return Err(format!("Unknown variables: {} and {}", x, y));
             }
-            let result = evaluate_operator(x_val.1, y_val.1, &next);
+            let result = evaluate_operator(x_val.unwrap()  ,y_val.unwrap(), &next);
             stack.push(result.to_string());
         }
         else {
             stack.push(next);
         }
     }
-    (true, stack.pop().unwrap().parse::<f32>().unwrap())
+    Ok(stack.pop().unwrap().parse::<f32>().unwrap())    
 }
 
-fn evaluate_expressions(expressions: &Vec<String>, context:&HashMap<String, f32>,) -> (bool, Vec<f32>) {
+#[allow(dead_code)]
+fn evaluate_expressions(expressions: &Vec<String>, context:&HashMap<String, f32>,) -> Result<Vec<f32>, String> {
     // need to change to accept a dictionary of expressions and return those.
     let mut results: Vec<f32> = Vec::new();
     for expression in expressions {
         let result = evaluate_expression(expression, context);
-        if !result.0 {
-            return (false, results);
+        if result.is_err() {
+            return Err(format!("Error evaluating expression: {}", expression));
         }
-        results.push(result.1);
+        results.push(result.unwrap());
     }
-    (true, results)
+    Ok(results)
 }
 
-fn get_val(context: &HashMap<String, f32>, token: &String) -> (bool, f32) {
+fn get_val(context: &HashMap<String, f32>, token: &String) -> Result<f32, String> {
     if token.parse::<f32>().is_ok() {
-        (true, token.parse::<f32>().unwrap())        
+        Ok(token.parse::<f32>().unwrap())        
     }
     else if context.contains_key(token) {
-        (true ,context[token])        
+        Ok(context[token])
+        
     }
     else {
-        (false, f32::default())
+        Err(format!("Unknown variable: {}", token))
     }
 }   
 
@@ -149,7 +142,7 @@ fn reverse_polish_notate(expression: String) -> VecDeque<String>{
             }
         }
     }
-    while operator_stack.len() > 0 { 
+    while !operator_stack.is_empty(){ 
         let op = operator_stack.pop().unwrap().1;
         if op == "(" {
             panic!("Parenthesis were not balanced in the expression {}. Missing Right Parenthesis", expression);
@@ -179,7 +172,7 @@ fn test_eval(){
     let expression = "( 1 + 2 ) * 3";
     let expected = 9.0;
     let context = HashMap::new();
-    assert_eq!(evaluate_expression(expression, &context).1, expected);
+    assert_eq!(evaluate_expression(expression, &context).unwrap(), expected);
 }
 
 
@@ -193,5 +186,5 @@ fn test_eval_expr(){
      .iter().cloned().collect();
     // use the values stored in map
 
-    assert_eq!(evaluate_expressions(&vec![expression], &context).1[0], expected);
+    assert_eq!(evaluate_expressions(&vec![expression], &context).unwrap()[0], expected);
 }

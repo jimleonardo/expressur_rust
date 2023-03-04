@@ -49,7 +49,7 @@ pub fn tokenize(expression: &str) -> Vec<String>{
 }
 
 fn output_token(output: &mut Vec<String>, current_token: &mut String) -> String {
-    if current_token.len() > 0 {
+    if !current_token.is_empty() {
         output.push(current_token.clone());
         current_token.clear();
     }
@@ -57,7 +57,7 @@ fn output_token(output: &mut Vec<String>, current_token: &mut String) -> String 
 }
 
 fn is_number(c: char) -> bool {
-    c.is_digit(10) || c == '.'
+    c.is_ascii_digit() || c == '.'
 }
 
 fn is_whitespace(c: char) -> bool {
