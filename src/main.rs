@@ -61,6 +61,29 @@ fn main() {
 /// let context = std::collections::HashMap::new();
 /// assert_eq!(evaluate_expression(expression, &context).unwrap(), expected);
 /// ```
+/// # PseudoGrammar
+///
+/// *identifier* := [A-Za-z_][A-Za-z_0-9*]
+/// 
+/// *number* := ^-?[0-9]\d*(\.\d+)?$
+/// 
+/// *token* := *identifier* | *number*
+/// 
+/// *operator* := [*/+-%^=]
+/// 
+/// *expression* := [(]*expression*|*token* *operator* *expression*|*token*[)]
+/// 
+/// Expressur handles all numbers as Base-10 decimals. This will meet most end users' expectations for most scenarios./// 
+///
+/// ## Operators supported
+///
+/// - "+" - addition (1 + 1 equals 2)
+/// - "-" - subtraction (2 - 2 equals 0)
+/// - "*" - multiplication (3 * 3 equals 9)
+/// - "/" - division (4 / 4 equals 1)
+/// - "%" - remainder (5%2 equals 1)
+/// - "^" - power (6^6 equals 46656)
+/// - "=" - equals (7=7 equals 1 [true], 7=9 equals 0 [false])
 pub fn evaluate_expression(expression: &str, context:&HashMap<String, Decimal>,) -> Result<Decimal, String> {
     let mut stack: Vec<String> = Vec::new();
     let mut q =  reverse_polish_notate(expression.to_string());
@@ -284,10 +307,10 @@ fn test_eval_context_expr1(){
         ("cplusaplusb".to_string(),"c + aplusb".to_string()),
         ("aplusb".to_string(),"a + b".to_string()),
         ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
-        ].iter().cloned().collect();        
+    ].iter().cloned().collect();        
 
-    let context: HashMap<String, Decimal> =
-    [("a".to_string(), dec!(1.)),
+    let context: HashMap<String, Decimal> = [
+        ("a".to_string(), dec!(1.)),
         ("b".to_string(), dec!(2.)),
         ("c".to_string(), dec!(4.))    
     ].iter().cloned().collect();

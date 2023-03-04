@@ -14,10 +14,10 @@ fn test_eval_context_expr1(){
         ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
         ].iter().cloned().collect();        
 
-    let context: HashMap<String, Decimal> =
-    [("a".to_string(), dec!(1.)),
-        ("b".to_string(), dec!(2.)),
-        ("c".to_string(), dec!(4.))    
+    let context: HashMap<String, Decimal> = [
+        ("a".to_string(), dec!(1.)),
+            ("b".to_string(), dec!(2.)),
+            ("c".to_string(), dec!(4.))    
     ].iter().cloned().collect();
     // use the values stored in map
     let results = evaluate_expressions(&expressions, &context).unwrap();
