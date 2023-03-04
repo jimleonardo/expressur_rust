@@ -1,14 +1,13 @@
 mod tokenizer;  
-use std::{env, collections::VecDeque};
-mod prelude{
+pub mod prelude{
     pub use std::collections::HashMap;
-    pub use std::vec;
-    
     pub use rust_decimal::Decimal;
     pub use rust_decimal_macros::*;
-    pub use rust_decimal::MathematicalOps;
-    
 }
+
+use std::{env, collections::VecDeque};
+use rust_decimal::MathematicalOps;
+
 use crate::tokenizer::*;
 use prelude::*;
 
@@ -30,7 +29,6 @@ fn operator_precedence(op: &str) -> i32 {
     }
 }
 
-
 fn main() {
     let args: Vec<String> = env::args().collect();
     let expression = args[1].to_string();
@@ -42,6 +40,27 @@ fn main() {
     } 
 }
 
+/// Evaluates an arithmetic expression and returns the result.
+/// 
+/// # Arguments
+/// expression: The expression to evaluate
+/// context: A HashMap of variables and their values that can be used in the expression.
+/// 
+/// # Returns
+/// The result of the expression as a Decimal.
+/// 
+/// # Errors
+/// If the expression contains unknown variables or is not a valid arithemetic expression, an error is returned.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use rust_decimal::Decimal;
+/// let expression = "( 1 + 2 ) * 3";
+/// let expected = dec!(9.0);
+/// let context = std::collections::HashMap::new();
+/// assert_eq!(evaluate_expression(expression, &context).unwrap(), expected);
+/// ```
 pub fn evaluate_expression(expression: &str, context:&HashMap<String, Decimal>,) -> Result<Decimal, String> {
     let mut stack: Vec<String> = Vec::new();
     let mut q =  reverse_polish_notate(expression.to_string());
@@ -71,6 +90,39 @@ pub fn evaluate_expression(expression: &str, context:&HashMap<String, Decimal>,)
     Ok(stack.pop().unwrap().parse::<Decimal>().unwrap())    
 }
 
+/// Evaluates a list of arithmetic expressions and returns the results. If any expressions cannot be evaluated, they are returned in the error.
+/// 
+/// # Arguments
+/// expressions: A HashMap of expressions to evaluate. The key is the name of the expression and the value is the expression itself. A value can be another expression.
+/// context: A HashMap of variables and their values that can be used in the expressions.
+/// 
+/// # Returns
+/// A dictionary of the results of the expressions as Decimals. This will also contain the context variables.
+///  
+/// # Errors
+/// If any expressions contain unknown variables, an error is returned.
+/// 
+/// # Examples
+/// 
+/// ```
+/// let expressions: HashMap<String, String> = [
+///     ("cplusaplusb".to_string(),"c + aplusb".to_string()),
+///     ("aplusb".to_string(),"a + b".to_string()),
+///     ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
+///     ].iter().cloned().collect();        
+/// 
+/// let context: HashMap<String, Decimal> = [
+///     ("a".to_string(), dec!(1.)),
+///     ("b".to_string(), dec!(2.)),
+///     ("c".to_string(), dec!(4.))    
+///     ].iter().cloned().collect();
+///
+/// let results = evaluate_expressions(&expressions, &context).unwrap();
+/// 
+/// assert_eq!(results["aplusb"], dec!(3.));
+/// assert_eq!(results["cplusaplusb"], dec!(7.));
+/// assert_eq!(results["extraindirection"].round_dp(3), dec!(0.429));
+/// ```
 pub fn evaluate_expressions(expressions: &HashMap<String, String>, context:&HashMap<String, Decimal>,) -> Result<HashMap<String, Decimal>, Vec<(String, String)>> {
     // need to change to accept a dictionary of expressions and return those.
     let mut results: HashMap<String, Decimal> = context.clone();
@@ -109,9 +161,7 @@ pub fn evaluate_expressions(expressions: &HashMap<String, String>, context:&Hash
     }
     else {
         Err(expressions_to_evaluate)
-    }
-
-    
+    }    
 }
 
 fn get_val(context: &HashMap<String, Decimal>, token: &String) -> Result<Decimal, String> {
