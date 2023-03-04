@@ -3,32 +3,28 @@ Expressur does some basic math. This project is a port of Expressur from C# to R
 
 The real reason I built Expressur is to be a meaningful but straightforward set of code that can be ported to almost any other language so that the languages can be compared. It does this by taking a normal problem, arithmetic, and using string manipulation, iteration, and primitive operations.
 
-It can also calculate the results of a set of formula, including formula that rely on the results of other formula. For example, this test from the original `[EvaluatorTests.cs](https://github.com/jimleonardo/Expressur/blob/main/test/Expressur.Test/EvaluatorTests.cs)` in C# shows this "extra indirection" where one formula relies on the results from two other formula, including a formula that in turn relies on other formula.
+It can also calculate the results of a set of formula, including formula that rely on the results of other formula. For example, this test shows this "extra indirection" where one formula relies on the results from two other formula, including a formula that in turn relies on other formula.
 
-```csharp
-[Fact]
-public void EvaluateExpressions_Evaluates_Correctly_With_Context()
-{
-    IDictionary<string, string> formula = new Dictionary<string, string> 
-    { 
-        { "cplusabplusb", "c + aplusb" }, 
-        { "aplusb", "a + b" }, 
-        { "extraindirection", "aplusb/cplusabplusb" } 
-    };
+```rust
+#[test]
+fn test_eval_context_expr1(){
+    let expressions: HashMap<String, String> = [
+        ("cplusaplusb".to_string(),"c + aplusb".to_string()),
+        ("aplusb".to_string(),"a + b".to_string()),
+        ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
+        ].iter().cloned().collect();        
 
-    IDictionary<string, decimal?> context = new Dictionary<string, decimal?> 
-    { 
-        {"a", 1 }, 
-        { "b", 2 }, 
-        { "c", 4 } 
-    };
+    let context: HashMap<String, Decimal> =
+    [("a".to_string(), dec!(1.)),
+        ("b".to_string(), dec!(2.)),
+        ("c".to_string(), dec!(4.))    
+    ].iter().cloned().collect();
+    // use the values stored in map
+    let results = evaluate_expressions(&expressions, &context).unwrap();
 
-    var results = (new Evaluator()).EvaluateExpressions(formula, context);
-
-    Assert.Equal(3m, results["aplusb"].Value);
-    Assert.Equal(7m, results["cplusabplusb"].Value);
-    Assert.Equal(0.429m, results["extraindirection"].Value, 3); 
-        // the 3 as the third parameter is the number of decimal places to check.
+    assert_eq!(results["aplusb"], dec!(3.));
+    assert_eq!(results["cplusaplusb"], dec!(7.));
+    assert_eq!(results["extraindirection"].round_dp(3), dec!(0.429));
 }
 ```
 
