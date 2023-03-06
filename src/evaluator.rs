@@ -8,18 +8,18 @@ use crate::prelude::*;
 const NOT_AN_OPERATOR: i32 = -1;
 const SUBEXPRESSION_PRECEDENCE: i32 = 1000;
 
-fn operator_precedence(op: &str) -> i32 {    
+fn operator_precedence(op: &str) -> (i32, char) {    
     match op {
-        "=" => 10,
-        "^" => 40,
-        "+" => 50,
-        "-" => 50,
-        "*" => 80,
-        "/" => 80,
-        "%" => 80,
-        "(" => SUBEXPRESSION_PRECEDENCE,
-        ")" => SUBEXPRESSION_PRECEDENCE,
-        _ => NOT_AN_OPERATOR
+        "=" => (10, '='),
+        "^" => (40, '^'),
+        "+" => (50, '+'),
+        "-" => (50, '-'),
+        "*" => (80, '*'),
+        "/" => (80, '/'),
+        "%" => (80, '%'),
+        "(" => (SUBEXPRESSION_PRECEDENCE, char::default()),
+        ")" => (SUBEXPRESSION_PRECEDENCE, char::default()),
+        _ => (NOT_AN_OPERATOR, char::default())
     }
 }
 /// Evaluates an arithmetic expression and returns the result.
@@ -75,21 +75,23 @@ pub fn evaluate_expression(expression: &str, context:&BTreeMap<String, Decimal>,
     let mut q =  reverse_polish_notate(expression.to_string());
     while !q.is_empty() {
         let next = q.pop_front().unwrap();
-        if operator_precedence(&next) != NOT_AN_OPERATOR {
+        let precedence = operator_precedence(&next);
+        if precedence.0 != NOT_AN_OPERATOR {
             let y = stack.pop().unwrap();
             let x = stack.pop().unwrap();
             let x_val =  get_val(context, &x);
             let y_val =  get_val(context, &y);
-            if  x_val.is_err() && y_val.is_err()  {
+            if  x_val.is_none() || y_val.is_none()  {
                 return Err(format!("Unknown variables: {} and {}", x, y));
             }
-            else if x_val.is_err() {
+            else if x_val.is_none() {
                 return Err(format!("Unknown variable: {}", x));
             }
-            else if y_val.is_err() {
+            else if y_val.is_none() {
                 return Err(format!("Unknown variable: {}", y));
             }
-            let result = evaluate_operator(x_val.unwrap()  ,y_val.unwrap(), &next);
+            
+            let result = evaluate_operator(x_val.unwrap()  ,y_val.unwrap(), precedence.1);
             stack.push(result.to_string());
         }
         else {
@@ -179,28 +181,28 @@ pub fn evaluate_expressions(expressions: &BTreeMap<String, String>, context:&BTr
     }    
 }
 
-fn get_val(context: &BTreeMap<String, Decimal>, token: &String) -> Result<Decimal, String> {
+fn get_val(context: &BTreeMap<String, Decimal>, token: &String) -> Option<Decimal> {
     if token.parse::<Decimal>().is_ok() {
-        Ok(token.parse::<Decimal>().unwrap())        
+        Some(token.parse::<Decimal>().unwrap())        
     }
     else if context.contains_key(token) {
-        Ok(context[token])
+        Some(context[token])
         
     }
     else {
-        Err(format!("Unknown variable: {}", token))
+        None
     }
 }   
 
-fn evaluate_operator (x: Decimal, y: Decimal, op: &str) -> Decimal {
+fn evaluate_operator (x: Decimal, y: Decimal, op: char) -> Decimal {
     match op {
-        "=" => if x == y { dec!(1.0) } else { dec!(0.0) },
-        "^" => x.powd(y),
-        "+" => x + y,
-        "-" => x - y,
-        "*" => x * y,
-        "/" => x / y,
-        "%" => x % y,
+        '=' => if x == y { dec!(1.0) } else { dec!(0.0) },
+        '^' => x.powd(y),
+        '+' => x + y,
+        '-' => x - y,
+        '*' => x * y,
+        '/' => x / y,
+        '%' => x % y,
         _ => panic!("Unknown operator: {}", op)
     }
 }
@@ -212,21 +214,21 @@ fn reverse_polish_notate(expression: String) -> VecDeque<String>{
     let tokens = tokenize(&expression);
     for next in tokens {
         let precedence = operator_precedence(&next);
-        if precedence == NOT_AN_OPERATOR {
+        if precedence.0 == NOT_AN_OPERATOR {
             output.push(next);
         }
-        else if precedence < SUBEXPRESSION_PRECEDENCE {
+        else if precedence.0 < SUBEXPRESSION_PRECEDENCE {
             while !operator_stack.is_empty() 
-                && operator_stack.last().unwrap().0 >= precedence
+                && operator_stack.last().unwrap().0 >= precedence.0
                 && operator_stack.last().unwrap().1 != "("
             {
                 let op = operator_stack.pop().unwrap().1;
                 output.push(op);
             }
-            operator_stack.push((precedence, next));
+            operator_stack.push((precedence.0, next));
         }
         else if next == "(" {
-            operator_stack.push((precedence, next));
+            operator_stack.push((precedence.0, next));
         }
         else if next == ")" {
             let mut found_left_parens = false;
