@@ -31,19 +31,23 @@ fn main() {
     // use the values stored in map
     // warm up
     evaluate_expressions(&expressions, &context).unwrap();
-    let outer_loops = 10;
-    let inner_loops = 100_000;
-    let mut total = std::time::Duration::new(0, 0); 
+    let mut outer_loops: i64 = 0;
+    let inner_loops:i64 = 1_000_000;
+    let mut total = std::time::Duration::new(0, 0);     
     println!("Starting loop...");
-    for i in 0..outer_loops {
+    loop {
         let duration = do_the_loop(&expressions, &context, inner_loops);
         total = total.add(duration);
-        println!("Pass {}, Time to Execute {}: {:?}", i+1, inner_loops.to_formatted_string(&Locale::en), duration);
+        outer_loops += 1;
+        println!("Loop {} took {:?} for a total of {:?}", outer_loops, duration, total);
+        if total > std::time::Duration::new(300, 0) {
+            break;
+        }        
     }
-    println!("Total Time to Execute {}: {:?}", (inner_loops*outer_loops).to_formatted_string(&Locale::en), total);
+    println!("Total Time to Execute {} times: {:?}", (inner_loops*outer_loops).to_formatted_string(&Locale::en), total);
 }
 
-fn do_the_loop(expressions: &BTreeMap<String, String>, context: &BTreeMap<String, Decimal>, inner_loops: usize) -> std::time::Duration{
+fn do_the_loop(expressions: &BTreeMap<String, String>, context: &BTreeMap<String, Decimal>, inner_loops: i64) -> std::time::Duration{
     let now = std::time::Instant::now();
     for _ in 0..inner_loops {
         evaluate_expressions(expressions, context).unwrap();
