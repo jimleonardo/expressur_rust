@@ -182,15 +182,17 @@ pub fn evaluate_expressions(expressions: &BTreeMap<String, String>, context:&BTr
 }
 
 fn get_val(context: &BTreeMap<String, Decimal>, token: &String) -> Option<Decimal> {
-    if token.parse::<Decimal>().is_ok() {
-        Some(token.parse::<Decimal>().unwrap())        
-    }
-    else if context.contains_key(token) {
-        Some(context[token])
-        
-    }
-    else {
-        None
+    match Decimal::from_str_exact(token) {
+        Ok(value) => Some(value),
+        _ => {
+            if context.contains_key(token) {
+                Some(context[token])
+                
+            }
+            else {
+                None
+            }
+        }
     }
 }   
 
@@ -323,4 +325,34 @@ fn test_eval_context_expr1(){
     assert_eq!(results["aplusb"], dec!(3.));
     assert_eq!(results["cplusaplusb"], dec!(7.));
     assert_eq!(results["extraindirection"].round_dp(3), dec!(0.429));
+}
+
+#[test]
+fn test_evaluate() {
+    let tests = vec![
+        ("1-1", dec!(0.)),
+        ("1+1", dec!(2.)),
+        ("1 + 1", dec!(2.)),
+        ("1 + -1", dec!(0.)),
+        ("1 - 1", dec!(0.)),
+        ("1 - -1", dec!(2.)),
+        ("-1 - -1", dec!(0.)),
+        ("-1 - +1", dec!(-2.)),
+        ("-1-+1", dec!(-2.)),
+        ("-14-+12/(-2*-54)", dec!(-14.111)),
+        ("1 + 1", dec!(2.)),
+        ("1 + (-1 + 2)", dec!(2.)),
+        ("1 + 1.0", dec!(2)),
+        ("1 + .0", dec!(1.)),
+        ("2 ^ 4", dec!(16.)),
+        ("1 + 2.2", dec!(3.2)),
+        ("(1 + 1)*2", dec!(4.)),
+        ("2 / 4", dec!(0.5)),
+        ("1 +555", dec!(556.)),
+        ("1+ 555", dec![556.]),
+    ];
+    for test in tests {
+        let context = BTreeMap::new();        
+        assert_eq!(evaluate_expression(test.0, &context).unwrap().round_dp(3), test.1, "Failed to evaluate: {}", test.0);
+    }
 }

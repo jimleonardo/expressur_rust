@@ -7,8 +7,8 @@ pub fn tokenize(expression: &str) -> Vec<String>{
     let mut current_token: String = String::new();
     
     for i in 0..expression.len(){
-        let c = expression.chars().nth(i).unwrap();       
-        
+        let c = expression.chars().nth(i).unwrap();
+
         if is_whitespace(c){
             current_token = output_token(&mut output, &mut current_token);
         }
@@ -19,13 +19,28 @@ pub fn tokenize(expression: &str) -> Vec<String>{
             current_token = output_token(&mut output, &mut current_token);
             output.push(c.to_string());
         }
-        else if c == '-' || c == '+' {            
+        else if c == '-' || c == '+' {
+                // could be indicating negative/positive number or operator
+                // if it is the first valid token in an expression/subexpression, its a negative/positive number
+                // if it is the first valid token after an operator, its a negative/positive number
+                // if it is the first valid token after an open parenthesis, its a negative/positive number
+                // if it is the first valid token after a decimal point, its a negative/positive number
+                // if it is the first valid token after an identifier or number, its an operator        
+            
+            let last_token = match output.last() {
+                Some(token) => token.to_string(),
+                None => "".to_string(),
+            };
             if last_char == char::default() {
                 current_token.push(c);
             }            
             else if expression.len() > i {
                 let next = expression.chars().nth(i+1).unwrap();
-                if is_whitespace(c) || is_operator(next) || next =='('{
+
+                if (is_whitespace(c) || is_operator(next) || next =='(')
+                    ||
+                    (is_number(next)  && (last_token != "(" || output.is_empty()) && !is_operator_str(last_token)) 
+                {
                     current_token = output_token(&mut output, &mut current_token);
                     output.push(c.to_string());
                 }
@@ -40,11 +55,12 @@ pub fn tokenize(expression: &str) -> Vec<String>{
          }
         else{
             panic!("Unexpected character: {}", c);
-        }
+        }        
         last_char = c;
-
     }
+
     output_token(&mut output, &mut current_token);
+
     output
 
 }
@@ -73,6 +89,13 @@ fn is_operator(c: char) -> bool {
     c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '=' || c == '%' 
 }
 
+fn is_operator_str(s: String) -> bool {
+    match s.as_str() {
+        "+" | "-" | "*" | "/" | "^" | "=" | "%" => true,
+        _ => false,
+    }
+}
+
 #[test]
 fn test_tokenizer() {
     let tests = vec![
@@ -97,7 +120,8 @@ fn test_tokenizer() {
         ("(1 + 1)*2", vec!["(", "1", "+", "1", ")", "*", "2"]),
         ("(1 + cash.cycle)*2", vec!["(", "1", "+", "cash.cycle", ")", "*", "2"]),
         ("2 / 1", vec!["2", "/", "1"]),
-        //known bug("1 +555", vec!["1", "+", "555"])
+        ("1 +555", vec!["1", "+", "555"]),
+        ("1+ 555", vec!["1", "+", "555"]),
     ];
     for test in tests {
         assert_eq!(tokenize(test.0), test.1, "Failed to tokenize: {}", test.0);
