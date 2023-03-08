@@ -1,3 +1,4 @@
+use crate::output_token;
 
 pub fn tokenize(expression: &str) -> Vec<String>{
 
@@ -10,13 +11,13 @@ pub fn tokenize(expression: &str) -> Vec<String>{
         let c = expression.chars().nth(i).unwrap();
 
         if is_whitespace(c){
-            current_token = output_token(&mut output, &mut current_token);
+            current_token = output_token!(output, current_token);
         }
         else if is_token_character(c){
             current_token.push(c);
         }
         else if c == '(' || c == ')' || c =='*' || c =='/' || c =='^' || c =='%' || c =='='{
-            current_token = output_token(&mut output, &mut current_token);
+            current_token = output_token!(output, current_token);
             output.push(c.to_string());
         }
         else if c == '-' || c == '+' {
@@ -41,14 +42,14 @@ pub fn tokenize(expression: &str) -> Vec<String>{
                     ||
                     (is_number(next)  && (last_token != "(" || output.is_empty()) && !is_operator_str(last_token)) 
                 {
-                    current_token = output_token(&mut output, &mut current_token);
+                    current_token = output_token!(output, current_token);
                     output.push(c.to_string());
                 }
                 else if is_number(next) && (is_operator(last_char) || is_whitespace(last_char) || last_char == '('){
                     current_token.push(c);
                 }
                 else {
-                    current_token = output_token(&mut output, &mut current_token);
+                    current_token = output_token!(output, current_token);
                     output.push(c.to_string());
                 }
             }
@@ -59,19 +60,23 @@ pub fn tokenize(expression: &str) -> Vec<String>{
         last_char = c;
     }
 
-    output_token(&mut output, &mut current_token);
+    output_token!(output, current_token);
 
     output
 
 }
 
-fn output_token(output: &mut Vec<String>, current_token: &mut String) -> String {
-    if !current_token.is_empty() {
-        output.push(current_token.clone());
-        current_token.clear();
-    }
-    current_token.clone()
+#[macro_export]
+macro_rules! output_token {
+    ($output:ident, $current_token:ident) => {{
+        if !$current_token.is_empty() {
+            $output.push($current_token);
+        }        
+        String::default()
+    }        
+    };
 }
+
 
 fn is_number(c: char) -> bool {
     c.is_ascii_digit() || c == '.'
@@ -90,10 +95,7 @@ fn is_operator(c: char) -> bool {
 }
 
 fn is_operator_str(s: String) -> bool {
-    match s.as_str() {
-        "+" | "-" | "*" | "/" | "^" | "=" | "%" => true,
-        _ => false,
-    }
+    matches!(s.as_str(), "+" | "-" | "*" | "/" | "^" | "=" | "%")
 }
 
 #[test]
