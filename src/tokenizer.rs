@@ -6,8 +6,8 @@ pub fn tokenize(expression: &str) -> Vec<String>{
     let mut last_char = char::default();
 
     let mut current_token: String = String::new();
-    
-    for i in 0..expression.len(){
+    let expression_len = expression.chars().count();
+    for i in 0..expression_len{
         let c = expression.chars().nth(i).unwrap();
 
         if is_whitespace(c){
@@ -35,7 +35,7 @@ pub fn tokenize(expression: &str) -> Vec<String>{
             if last_char == char::default() {
                 current_token.push(c);
             }            
-            else if expression.len() > i {
+            else if expression_len > i {
                 let next = expression.chars().nth(i+1).unwrap();
 
                 if (is_whitespace(c) || is_operator(next) || next =='(')
