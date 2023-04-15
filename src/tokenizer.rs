@@ -99,7 +99,7 @@ fn is_operator_str(s: String) -> bool {
 }
 
 #[test]
-fn test_tokenizer() {
+fn test_batch_tokenize() {
     let tests = vec![
         ("1-1", vec!["1", "-", "1"]),
         ("1+1", vec!["1", "+", "1"]),
