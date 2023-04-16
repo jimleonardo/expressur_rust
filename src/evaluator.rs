@@ -119,17 +119,15 @@ pub fn evaluate_expression(
 /// use rust_decimal::Decimal;
 /// use rust_decimal_macros::dec;
 /// use std::collections::BTreeMap;
-/// let expressions: BTreeMap<String, String> = [
-///     ("cplusaplusb".to_string(),"c + aplusb".to_string()),
-///     ("aplusb".to_string(),"a + b".to_string()),
-///     ("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string())
-///     ].iter().cloned().collect();        
+/// let mut expressions: BTreeMap<String, String> = BTreeMap::new();
+/// expressions.insert("cplusaplusb".to_string(),"c + aplusb".to_string());
+/// expressions.insert("aplusb".to_string(),"a + b".to_string());
+/// expressions.insert("extraindirection".to_string(), "(aplusb/ cplusaplusb)".to_string());        
 ///
-/// let context: BTreeMap<String, rust_decimal::Decimal> = [
-///     ("a".to_string(), dec!(1.)),
-///     ("b".to_string(), dec!(2.)),
-///     ("c".to_string(), dec!(4.))    
-///     ].iter().cloned().collect();
+/// let mut context: BTreeMap<String, rust_decimal::Decimal> = BTreeMap::new();
+/// context.insert("a".to_string(), dec!(1.));
+/// context.insert("b".to_string(), dec!(2.));
+/// context.insert("c".to_string(), dec!(4.));   
 ///
 /// let results = evaluate_expressions(&expressions, &context).unwrap();
 ///
