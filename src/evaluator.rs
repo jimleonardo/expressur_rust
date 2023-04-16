@@ -4,21 +4,20 @@ use std::collections::VecDeque;
 use crate::prelude::*;
 use crate::tokenizer::*;
 
-const NOT_AN_OPERATOR: i32 = -1;
 const SUBEXPRESSION_PRECEDENCE: i32 = 1000;
 
-fn operator_precedence(op: &str) -> (i32, char) {
+fn operator_precedence(op: &str) -> Option<(i32, char)> {
     match op {
-        "=" => (10, '='),
-        "^" => (40, '^'),
-        "+" => (50, '+'),
-        "-" => (50, '-'),
-        "*" => (80, '*'),
-        "/" => (80, '/'),
-        "%" => (80, '%'),
-        "(" => (SUBEXPRESSION_PRECEDENCE, char::default()),
-        ")" => (SUBEXPRESSION_PRECEDENCE, char::default()),
-        _ => (NOT_AN_OPERATOR, char::default()),
+        "=" => Some((10, '=')),
+        "^" => Some((40, '^')),
+        "+" => Some((50, '+')),
+        "-" => Some((50, '-')),
+        "*" => Some((80, '*')),
+        "/" => Some((80, '/')),
+        "%" => Some((80, '%')),
+        "(" => Some((SUBEXPRESSION_PRECEDENCE, char::default())),
+        ")" => Some((SUBEXPRESSION_PRECEDENCE, char::default())),
+        _ => None,
     }
 }
 /// Evaluates an arithmetic expression and returns the result.
@@ -78,23 +77,25 @@ pub fn evaluate_expression(
     while !q.is_empty() {
         let next = q.pop_front().unwrap();
         let precedence = operator_precedence(&next);
-        if precedence.0 != NOT_AN_OPERATOR {
-            let y = stack.pop().unwrap();
-            let x = stack.pop().unwrap();
-            let x_val = get_val(context, &x);
-            let y_val = get_val(context, &y);
-            if x_val.is_none() || y_val.is_none() {
-                return Err(format!("Unknown variables: {} and {}", x, y));
-            } else if x_val.is_none() {
-                return Err(format!("Unknown variable: {}", x));
-            } else if y_val.is_none() {
-                return Err(format!("Unknown variable: {}", y));
-            }
+        match precedence {
+            Some((_, _)) => {
+                let y = stack.pop().unwrap();
+                let x = stack.pop().unwrap();
+                let x_val = get_val(context, &x);
+                let y_val = get_val(context, &y);
+                if x_val.is_none() || y_val.is_none() {
+                    return Err(format!("Unknown variables: {} and {}", x, y));
+                } else if x_val.is_none() {
+                    return Err(format!("Unknown variable: {}", x));
+                } else if y_val.is_none() {
+                    return Err(format!("Unknown variable: {}", y));
+                }
 
-            let result = evaluate_operator(x_val.unwrap(), y_val.unwrap(), precedence.1);
-            stack.push(result.to_string());
-        } else {
-            stack.push(next);
+                let result =
+                    evaluate_operator(x_val.unwrap(), y_val.unwrap(), precedence.unwrap().1);
+                stack.push(result.to_string());
+            },
+            None => stack.push(next),
         }
     }
     Ok(stack.pop().unwrap().parse::<Decimal>().unwrap())
@@ -236,37 +237,41 @@ fn reverse_polish_notate(expression: String) -> VecDeque<String> {
     let mut operator_stack: Vec<(i32, String)> = Vec::new();
     let tokens = tokenize(&expression);
     for next in tokens {
-        let precedence = operator_precedence(&next);
-        if precedence.0 == NOT_AN_OPERATOR {
-            output.push(next);
-        } else if precedence.0 < SUBEXPRESSION_PRECEDENCE {
-            while !operator_stack.is_empty()
-                && operator_stack.last().unwrap().0 >= precedence.0
-                && operator_stack.last().unwrap().1 != "("
-            {
-                let op = operator_stack.pop().unwrap().1;
-                output.push(op);
-            }
-            operator_stack.push((precedence.0, next));
-        } else if next == "(" {
-            operator_stack.push((precedence.0, next));
-        } else if next == ")" {
-            let mut found_left_parens = false;
-            while !operator_stack.is_empty() {
-                let op = operator_stack.pop().unwrap().1;
-                if op != "(" {
-                    output.push(op);
-                } else {
-                    found_left_parens = true;
-                    break;
+        let precedence_result = operator_precedence(&next);
+
+        match precedence_result {
+            Some(precedence) => {
+                if precedence.0 < SUBEXPRESSION_PRECEDENCE {
+                    while !operator_stack.is_empty()
+                        && operator_stack.last().unwrap().0 >= precedence.0
+                        && operator_stack.last().unwrap().1 != "("
+                    {
+                        let op = operator_stack.pop().unwrap().1;
+                        output.push(op);
+                    }
+                    operator_stack.push((precedence.0, next));
+                } else if next == "(" {
+                    operator_stack.push((precedence.0, next));
+                } else if next == ")" {
+                    let mut found_left_parens = false;
+                    while !operator_stack.is_empty() {
+                        let op = operator_stack.pop().unwrap().1;
+                        if op != "(" {
+                            output.push(op);
+                        } else {
+                            found_left_parens = true;
+                            break;
+                        }
+                    }
+                    if !found_left_parens {
+                        panic!(
+                        "Parenthesis were not balanced in the expression {}. Missing Left Parenthesis",
+                        expression
+                    );
+                    }
                 }
             }
-            if !found_left_parens {
-                panic!(
-                    "Parenthesis were not balanced in the expression {}. Missing Left Parenthesis",
-                    expression
-                );
-            }
+            None => output.push(next),
         }
     }
     while !operator_stack.is_empty() {
@@ -320,18 +325,17 @@ fn test_evaluate_expressions() {
     assert_eq!(actual, expected);
 }
 
-
-// this is the simplest way to test the evaluate_expressions function, using 
+// this is the simplest way to test the evaluate_expressions function, using
 // the simpler .insert() method on the BTreeMap
 #[test]
 fn test_context_evaluate_expressions_1() {
-    let mut expressions: BTreeMap<String, String> =  BTreeMap::new();
+    let mut expressions: BTreeMap<String, String> = BTreeMap::new();
     expressions.insert("aplusb".to_string(), "a + b".to_string());
 
-    let mut context: BTreeMap<String, Decimal> =  BTreeMap::new();
+    let mut context: BTreeMap<String, Decimal> = BTreeMap::new();
     context.insert("a".to_string(), dec!(1.));
     context.insert("b".to_string(), dec!(2.));
-    
+
     // use the values stored in map
     let results = evaluate_expressions(&expressions, &context).unwrap();
 
@@ -339,7 +343,7 @@ fn test_context_evaluate_expressions_1() {
 }
 
 // this is the more complex way to test the evaluate_expressions function, using
-// the .iter().cloned().collect() method on the BTreeMap to populate from a 
+// the .iter().cloned().collect() method on the BTreeMap to populate from a
 // static array. That avoids making the context and expressions mutable.
 #[test]
 fn test_context_evaluate_expressions_2() {
