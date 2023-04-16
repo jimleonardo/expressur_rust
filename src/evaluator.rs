@@ -322,8 +322,29 @@ fn test_evaluate_expressions() {
     assert_eq!(actual, expected);
 }
 
+
+// this is the simplest way to test the evaluate_expressions function, using 
+// the simpler .insert() method on the BTreeMap
 #[test]
-fn test_context_evaluate_expressions() {
+fn test_context_evaluate_expressions_1() {
+    let mut expressions: BTreeMap<String, String> =  BTreeMap::new();
+    expressions.insert("aplusb".to_string(), "a + b".to_string());
+
+    let mut context: BTreeMap<String, Decimal> =  BTreeMap::new();
+    context.insert("a".to_string(), dec!(1.));
+    context.insert("b".to_string(), dec!(2.));
+    
+    // use the values stored in map
+    let results = evaluate_expressions(&expressions, &context).unwrap();
+
+    assert_eq!(results["aplusb"], dec!(3.));
+}
+
+// this is the more complex way to test the evaluate_expressions function, using
+// the .iter().cloned().collect() method on the BTreeMap to populate from a 
+// static array. That avoids making the context and expressions mutable.
+#[test]
+fn test_context_evaluate_expressions_2() {
     let expressions: BTreeMap<String, String> = [
         ("cplusaplusb".to_string(), "c + aplusb".to_string()),
         ("aplusb".to_string(), "a + b".to_string()),
